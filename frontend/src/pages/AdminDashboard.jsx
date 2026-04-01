@@ -51,7 +51,7 @@ export default function AdminDashboard({ user }) {
 
   const { data: bedGrid, loading: bgLoading, secondsAgo } = usePolling(fetchBedGrid, 15000, activeTab === 'bedgrid')
   const { data: compliance, loading: compLoading, refetch: refetchCompliance } = usePolling(fetchCompliance, 15000, activeTab === 'compliance')
-  const { data: staffList } = usePolling(fetchStaff, 30000, activeTab === 'staff')
+  const { data: staffList } = usePolling(fetchStaff, 30000, activeTab === 'staff' || activeTab === 'register')
 
   const tabs = [
     { id: 'bedgrid', label: '🏥 Bed Grid' },
@@ -132,23 +132,42 @@ export default function AdminDashboard({ user }) {
 
       {/* Demo result banner */}
       {demoResult && (
-        <div className="mx-6 mt-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 animate-fade-in">
-          <div className="flex items-start justify-between">
+        <div className="mx-6 mt-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl overflow-hidden animate-fade-in">
+          <div className="flex items-start justify-between p-5">
             <div>
-              <p className="text-emerald-400 font-semibold">{demoResult.message}</p>
-              <p className="text-gray-400 text-sm mt-1">{demoResult.fraud_flags_created} fraud flags created • {demoResult.patients?.length} patients loaded</p>
+              <p className="text-emerald-400 font-bold text-base">{demoResult.message}</p>
+              <p className="text-gray-400 text-sm mt-1">{demoResult.fraud_flags_created} fraud flags created • {demoResult.patients?.length} demo patients loaded</p>
             </div>
-            <button onClick={() => setDemoResult(null)} className="text-gray-500 hover:text-white">✕</button>
+            <button onClick={() => setDemoResult(null)} className="text-gray-500 hover:text-white text-lg leading-none mt-0.5">✕</button>
           </div>
           {demoResult.credentials && Object.keys(demoResult.credentials).length > 0 && (
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {Object.entries(demoResult.credentials).map(([name, creds]) => (
-                <div key={name} className="bg-surface-700 rounded-xl px-3 py-2 text-xs">
-                  <span className="text-white font-medium">{name}</span>
-                  <span className="text-gray-400 ml-2">{creds.email}</span>
-                  <span className="text-emerald-400 ml-2 font-mono">{creds.password}</span>
-                </div>
-              ))}
+            <div className="border-t border-emerald-500/20">
+              <p className="px-5 py-3 text-xs text-gray-500 uppercase tracking-wider font-semibold border-b border-white/5">Patient Login Credentials — share with patients</p>
+              <div className="divide-y divide-white/5">
+                {Object.entries(demoResult.credentials).map(([name, creds]) => (
+                  <div key={name} className="flex items-center justify-between px-5 py-3 hover:bg-white/5 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-vheal-600/30 border border-vheal-500/30 flex items-center justify-center text-vheal-300 text-xs font-bold">{name.charAt(0)}</div>
+                      <span className="text-white font-semibold text-sm">{name}</span>
+                    </div>
+                    <div className="flex items-center gap-6 text-xs">
+                      <div>
+                        <p className="text-gray-500 mb-0.5">Email</p>
+                        <p className="font-mono text-gray-200 select-all">{creds.email}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 mb-0.5">Password</p>
+                        <p className="font-mono text-emerald-400 font-bold select-all">{creds.password}</p>
+                      </div>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(`Email: ${creds.email}\nPassword: ${creds.password}`)}
+                        className="text-gray-500 hover:text-vheal-400 transition-colors p-1 rounded hover:bg-white/5"
+                        title="Copy credentials"
+                      >📋</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -236,16 +255,51 @@ export default function AdminDashboard({ user }) {
           <div className="max-w-2xl">
             <h2 className="section-title">Register New Patient</h2>
             {registeredCreds && (
-              <div className="mb-6 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-5 animate-fade-in">
-                <p className="text-emerald-400 font-bold text-lg mb-3">✅ Patient Registered!</p>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div><span className="text-gray-500">Login Email:</span><br/><span className="font-mono text-white">{registeredCreds.credentials?.email}</span></div>
-                  <div><span className="text-gray-500">Password:</span><br/><span className="font-mono text-emerald-400 font-bold">{registeredCreds.credentials?.password}</span></div>
-                  <div><span className="text-gray-500">Patient ID:</span><br/><span className="font-mono text-vheal-300">{registeredCreds.patient_id}</span></div>
-                  <div><span className="text-gray-500">State:</span><br/><span className="badge badge-admitted">{registeredCreds.state}</span></div>
+              <div className="mb-6 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl overflow-hidden animate-fade-in">
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-emerald-500/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-xl">✅</div>
+                    <div>
+                      <p className="text-emerald-400 font-bold text-base">Patient Registered Successfully</p>
+                      <p className="text-gray-500 text-xs mt-0.5">Save these credentials — they are shown only once</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setRegisteredCreds(null)} className="text-gray-500 hover:text-white text-lg">✕</button>
                 </div>
-                <p className="text-xs text-gray-500 mt-3">QR URL: <span className="font-mono">{registeredCreds.qr_url}</span></p>
-                <button onClick={() => setRegisteredCreds(null)} className="mt-3 text-xs text-gray-500 hover:text-white">Dismiss →</button>
+                {/* Credentials block */}
+                <div className="p-5 space-y-4">
+                  <div className="bg-surface-900/60 rounded-xl border border-white/5 divide-y divide-white/5">
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <span className="text-xs text-gray-500 uppercase tracking-wide font-semibold w-28">Login Email</span>
+                      <span className="font-mono text-white text-sm select-all flex-1">{registeredCreds.credentials?.email}</span>
+                      <button onClick={() => navigator.clipboard.writeText(registeredCreds.credentials?.email)} className="text-gray-500 hover:text-vheal-400 ml-3" title="Copy">📋</button>
+                    </div>
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <span className="text-xs text-gray-500 uppercase tracking-wide font-semibold w-28">Password</span>
+                      <span className="font-mono text-emerald-400 font-bold text-sm select-all flex-1">{registeredCreds.credentials?.password}</span>
+                      <button onClick={() => navigator.clipboard.writeText(registeredCreds.credentials?.password)} className="text-gray-500 hover:text-vheal-400 ml-3" title="Copy">📋</button>
+                    </div>
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <span className="text-xs text-gray-500 uppercase tracking-wide font-semibold w-28">Patient ID</span>
+                      <span className="font-mono text-vheal-300 text-sm flex-1">#{registeredCreds.patient_id}</span>
+                    </div>
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <span className="text-xs text-gray-500 uppercase tracking-wide font-semibold w-28">Status</span>
+                      <span className="badge badge-admitted">{registeredCreds.state}</span>
+                    </div>
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <span className="text-xs text-gray-500 uppercase tracking-wide font-semibold w-28">QR Portal</span>
+                      <span className="font-mono text-gray-400 text-xs flex-1 truncate">{registeredCreds.qr_url}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(`Email: ${registeredCreds.credentials?.email}\nPassword: ${registeredCreds.credentials?.password}`)}
+                    className="btn-primary w-full py-2.5 text-sm"
+                  >
+                    📋 Copy All Credentials
+                  </button>
+                </div>
               </div>
             )}
 
@@ -267,6 +321,20 @@ export default function AdminDashboard({ user }) {
                   </select>
                 </div>
                 <div><label className="label mb-1 block">Bed Number</label><input className="input-field" value={form.bed_number} onChange={e => setForm({...form, bed_number: e.target.value})} placeholder="e.g. G-101" /></div>
+                <div>
+                  <label className="label mb-1 block">Assign Doctor *</label>
+                  <select
+                    className="input-field"
+                    value={form.doctor_id}
+                    onChange={e => setForm({...form, doctor_id: e.target.value})}
+                    required
+                  >
+                    <option value="">— Select a doctor —</option>
+                    {staffList?.filter(s => s.role === 'doctor').map(d => (
+                      <option key={d.id} value={d.id}>Dr. {d.name}</option>
+                    ))}
+                  </select>
+                </div>
                 <div><label className="label mb-1 block">Insurance Provider</label><input className="input-field" value={form.insurance_provider} onChange={e => setForm({...form, insurance_provider: e.target.value})} placeholder="Star Health, etc." /></div>
                 <div><label className="label mb-1 block">Insurance ID</label><input className="input-field" value={form.insurance_id} onChange={e => setForm({...form, insurance_id: e.target.value})} placeholder="Policy ID" /></div>
               </div>

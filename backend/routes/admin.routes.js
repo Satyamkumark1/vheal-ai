@@ -31,12 +31,19 @@ router.post('/register', authenticateToken, requireRole('admin'), async (req, re
     const userResult = db.prepare(`INSERT INTO users (name, email, password_hash, role, department) VALUES (?, ?, ?, ?, ?)`)
       .run(name, email, passwordHash, 'patient', 'Patient');
 
+    // Auto-assign first available doctor if not provided
+    let assignedDoctorId = doctor_id ? parseInt(doctor_id) : null;
+    if (!assignedDoctorId) {
+      const firstDoctor = db.prepare(`SELECT id FROM users WHERE role = 'doctor' AND is_active = 1 LIMIT 1`).get();
+      assignedDoctorId = firstDoctor?.id || null;
+    }
+
     // Create patient record
     const patientResult = db.prepare(`
       INSERT INTO patients (user_id, name, age, gender, phone, emergency_contact, diagnosis, diagnosis_code, ward_type, bed_number, doctor_id, insurance_provider, insurance_id, is_emergency, qr_token, created_by)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(userResult.lastInsertRowid, name, age, gender, phone || null, emergency_contact || null,
-      diagnosis, diagnosis_code, ward_type, bed_number || null, doctor_id || null,
+      diagnosis, diagnosis_code, ward_type, bed_number || null, assignedDoctorId,
       insurance_provider || null, insurance_id || null, is_emergency ? 1 : 0,
       qrToken, req.user.id);
 
